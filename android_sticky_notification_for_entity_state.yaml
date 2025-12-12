@@ -121,7 +121,7 @@ action:
                       message: "{{ msg }}"
                       data:
                         tag: "{{ tag }}"
-                        persistent: "{{ sticky | bool }}"
+                        persistent: {{ sticky | bool }}
                         channel: "{{ channel }}"
                         importance: "{{ importance }}"
             default:
@@ -131,7 +131,7 @@ action:
                   message: "{{ msg }}"
                   data:
                     tag: "{{ tag }}"
-                    persistent: "{{ sticky | bool }}"
+                    persistent: {{ sticky | bool }}
                     importance: "{{ importance }}"
     default:
       # CLEAR when entity leaves desired state
