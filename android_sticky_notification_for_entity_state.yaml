@@ -1,0 +1,123 @@
+blueprint:
+  name: Android sticky notification for entity state (auto-dismiss)
+  description: >
+    Sends a persistent (sticky) notification to an Android phone when an entity
+    enters a target state, and clears it when the entity leaves that state.
+    Requires Home Assistant Companion App on Android (notify.<device> service).
+  domain: automation
+  input:
+    target_entity:
+      name: Entity to monitor
+      selector:
+        entity: {}
+    target_state:
+      name: State that triggers the sticky notification
+      description: Example: "on", "open", "home", "playing", "locked"
+      default: "on"
+      selector:
+        text: {}
+    notify_device:
+      name: Android notify service
+      description: Select your phone's notify service (notify.mobile_app_...)
+      selector:
+        text: {}
+    title:
+      name: Notification title
+      default: "Home Assistant"
+      selector:
+        text: {}
+    message:
+      name: Notification message
+      default: ""
+      selector:
+        text:
+          multiline: true
+    notification_tag:
+      name: Notification tag (used to update/clear)
+      description: Must be unique per automation/phone (e.g. "sticky_light_kitchen")
+      default: "ha_sticky_state"
+      selector:
+        text: {}
+    channel:
+      name: Android notification channel (optional)
+      description: Optional; create a dedicated channel on your phone if you want.
+      default: ""
+      selector:
+        text: {}
+    importance:
+      name: Android importance (optional)
+      description: One of: min, low, default, high, max (depends on app/version)
+      default: "default"
+      selector:
+        select:
+          options:
+            - min
+            - low
+            - default
+            - high
+            - max
+    make_sticky:
+      name: Make notification sticky (persistent)
+      description: Uses 'persistent: true' on Android.
+      default: true
+      selector:
+        boolean: {}
+    show_when_unavailable:
+      name: Also notify when entity is unavailable/unknown (optional)
+      default: false
+      selector:
+        boolean: {}
+
+mode: single
+
+trigger:
+  - platform: state
+    entity_id: !input target_entity
+
+variables:
+  ent: !input target_entity
+  desired: !input target_state
+  tag: !input notification_tag
+  title: !input title
+  channel: !input channel
+  importance: !input importance
+  sticky: !input make_sticky
+  also_bad: !input show_when_unavailable
+  # If you leave message blank, we build a sensible default.
+  msg_in: !input message
+  msg_default: >-
+    {{ state_attr(ent, 'friendly_name') or ent }} is {{ states(ent) }}.
+  msg: >-
+    {{ (msg_in | trim) if (msg_in | trim) else msg_default }}
+
+condition: []
+
+action:
+  - choose:
+      # SEND when entity enters desired state (or optionally becomes unavailable/unknown)
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.to_state is not none and (
+                   trigger.to_state.state == desired
+                   or (also_bad and trigger.to_state.state in ['unavailable','unknown'])
+                 ) }}
+        sequence:
+          - service: !input notify_device
+            data:
+              title: "{{ title }}"
+              message: "{{ msg }}"
+              data:
+                tag: "{{ tag }}"
+                persistent: "{{ sticky }}"
+                # Only include channel if provided (empty channel can behave oddly on some phones)
+                channel: >-
+                  {{ channel if (channel | trim) else omit }}
+                importance: "{{ importance }}"
+    default:
+      # CLEAR when entity leaves desired state (and not unavailable/unknown unless you want that)
+      - service: !input notify_device
+        data:
+          message: clear_notification
+          data:
+            tag: "{{ tag }}"
