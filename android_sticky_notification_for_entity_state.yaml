@@ -20,11 +20,12 @@ blueprint:
         text: {}
 
     notify_service:
-      name: Android notify service
-      description: Select notify.mobile_app_<your_phone>
+      name: Android notify service (exact)
+      description: >
+        Enter the exact service, e.g. notify.mobile_app_your_phone.
+        Find it in Developer Tools → Services.
       selector:
-        service:
-          domain: notify
+        text: {}
 
     title:
       name: Notification title
@@ -34,7 +35,6 @@ blueprint:
 
     message:
       name: Notification message (optional)
-      description: Leave blank to auto-generate.
       default: ""
       selector:
         text:
@@ -77,31 +77,22 @@ blueprint:
       selector:
         boolean: {}
 
-    notify_on_start:
-      name: Notify immediately on Home Assistant start if already in target state
-      default: false
-      selector:
-        boolean: {}
-
 mode: single
 
 trigger:
   - platform: state
     entity_id: !input target_entity
 
-  - platform: homeassistant
-    event: start
-
 variables:
   ent: !input target_entity
   desired: !input target_state
+  notify_service: !input notify_service
   tag: !input notification_tag
   notif_title: !input title
   channel: !input channel
   importance: !input importance
   sticky: !input make_sticky
   also_bad: !input show_when_unavailable
-  notify_on_start: !input notify_on_start
   msg_in: !input message
   msg_default: >-
     {{ state_attr(ent, 'friendly_name') or ent }} is {{ states(ent) }}.
@@ -110,24 +101,21 @@ variables:
 
 action:
   - choose:
-      # SEND when in desired state (or optionally unavailable/unknown),
-      # including on HA start (if enabled).
+      # SEND when entity enters desired state (or optionally unavailable/unknown)
       - conditions:
           - condition: template
             value_template: >-
-              {% set st = states(ent) %}
-              {% if trigger.platform == 'homeassistant' and not notify_on_start %}
-                false
-              {% else %}
-                (st == desired) or (also_bad and st in ['unavailable','unknown'])
-              {% endif %}
+              {{ trigger.to_state is not none and (
+                   trigger.to_state.state == desired
+                   or (also_bad and trigger.to_state.state in ['unavailable','unknown'])
+                 ) }}
         sequence:
           - choose:
               - conditions:
                   - condition: template
                     value_template: "{{ (channel | trim) != '' }}"
                 sequence:
-                  - service: !input notify_service
+                  - service: "{{ notify_service }}"
                     data:
                       title: "{{ notif_title }}"
                       message: "{{ msg }}"
@@ -137,7 +125,7 @@ action:
                         channel: "{{ channel }}"
                         importance: "{{ importance }}"
             default:
-              - service: !input notify_service
+              - service: "{{ notify_service }}"
                 data:
                   title: "{{ notif_title }}"
                   message: "{{ msg }}"
@@ -145,10 +133,9 @@ action:
                     tag: "{{ tag }}"
                     persistent: "{{ sticky | bool }}"
                     importance: "{{ importance }}"
-
     default:
-      # CLEAR when not in desired state
-      - service: !input notify_service
+      # CLEAR when entity leaves desired state
+      - service: "{{ notify_service }}"
         data:
           message: clear_notification
           data:
