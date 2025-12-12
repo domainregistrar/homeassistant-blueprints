@@ -12,13 +12,13 @@ blueprint:
         entity: {}
     target_state:
       name: State that triggers the sticky notification
-      description: Example: "on", "open", "home", "playing", "locked"
+      description: "Example: on, open, home, playing, locked"
       default: "on"
       selector:
         text: {}
     notify_device:
       name: Android notify service
-      description: Select your phone's notify service (notify.mobile_app_...)
+      description: "Select your phone's notify service (notify.mobile_app_...)"
       selector:
         text: {}
     title:
@@ -34,19 +34,19 @@ blueprint:
           multiline: true
     notification_tag:
       name: Notification tag (used to update/clear)
-      description: Must be unique per automation/phone (e.g. "sticky_light_kitchen")
+      description: "Must be unique per automation/phone (e.g. sticky_light_kitchen)"
       default: "ha_sticky_state"
       selector:
         text: {}
     channel:
       name: Android notification channel (optional)
-      description: Optional; create a dedicated channel on your phone if you want.
+      description: "Optional; create a dedicated channel on your phone if you want."
       default: ""
       selector:
         text: {}
     importance:
       name: Android importance (optional)
-      description: One of: min, low, default, high, max (depends on app/version)
+      description: "One of: min, low, default, high, max (depends on app/version)"
       default: "default"
       selector:
         select:
@@ -58,7 +58,7 @@ blueprint:
             - max
     make_sticky:
       name: Make notification sticky (persistent)
-      description: Uses 'persistent: true' on Android.
+      description: "Uses 'persistent: true' on Android."
       default: true
       selector:
         boolean: {}
