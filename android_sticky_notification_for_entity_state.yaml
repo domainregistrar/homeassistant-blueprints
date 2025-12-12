@@ -3,50 +3,58 @@ blueprint:
   description: >
     Sends a persistent (sticky) notification to an Android phone when an entity
     enters a target state, and clears it when the entity leaves that state.
-    Requires Home Assistant Companion App on Android (notify.<device> service).
+    Requires Home Assistant Companion App on Android.
   domain: automation
+
   input:
     target_entity:
       name: Entity to monitor
       selector:
         entity: {}
+
     target_state:
       name: State that triggers the sticky notification
-      description: "Example: on, open, home, playing, locked"
+      description: 'Example: on, open, home, playing, locked'
       default: "on"
       selector:
         text: {}
-    notify_device:
+
+    notify_service:
       name: Android notify service
-      description: "Select your phone's notify service (notify.mobile_app_...)"
+      description: Select notify.mobile_app_<your_phone>
       selector:
-        text: {}
+        service:
+          domain: notify
+
     title:
       name: Notification title
       default: "Home Assistant"
       selector:
         text: {}
+
     message:
-      name: Notification message
+      name: Notification message (optional)
+      description: Leave blank to auto-generate.
       default: ""
       selector:
         text:
           multiline: true
+
     notification_tag:
       name: Notification tag (used to update/clear)
-      description: "Must be unique per automation/phone (e.g. sticky_light_kitchen)"
+      description: Must be unique per automation/phone (e.g. sticky_light_kitchen)
       default: "ha_sticky_state"
       selector:
         text: {}
+
     channel:
       name: Android notification channel (optional)
-      description: "Optional; create a dedicated channel on your phone if you want."
       default: ""
       selector:
         text: {}
+
     importance:
       name: Android importance (optional)
-      description: "One of: min, low, default, high, max (depends on app/version)"
       default: "default"
       selector:
         select:
@@ -56,14 +64,21 @@ blueprint:
             - default
             - high
             - max
+
     make_sticky:
       name: Make notification sticky (persistent)
-      description: "Uses 'persistent: true' on Android."
       default: true
       selector:
         boolean: {}
+
     show_when_unavailable:
-      name: Also notify when entity is unavailable/unknown (optional)
+      name: Also notify when entity is unavailable/unknown
+      default: false
+      selector:
+        boolean: {}
+
+    notify_on_start:
+      name: Notify immediately on Home Assistant start if already in target state
       default: false
       selector:
         boolean: {}
@@ -74,49 +89,66 @@ trigger:
   - platform: state
     entity_id: !input target_entity
 
+  - platform: homeassistant
+    event: start
+
 variables:
   ent: !input target_entity
   desired: !input target_state
   tag: !input notification_tag
-  title: !input title
+  notif_title: !input title
   channel: !input channel
   importance: !input importance
   sticky: !input make_sticky
   also_bad: !input show_when_unavailable
-  # If you leave message blank, we build a sensible default.
+  notify_on_start: !input notify_on_start
   msg_in: !input message
   msg_default: >-
     {{ state_attr(ent, 'friendly_name') or ent }} is {{ states(ent) }}.
   msg: >-
     {{ (msg_in | trim) if (msg_in | trim) else msg_default }}
 
-condition: []
-
 action:
   - choose:
-      # SEND when entity enters desired state (or optionally becomes unavailable/unknown)
+      # SEND when in desired state (or optionally unavailable/unknown),
+      # including on HA start (if enabled).
       - conditions:
           - condition: template
             value_template: >-
-              {{ trigger.to_state is not none and (
-                   trigger.to_state.state == desired
-                   or (also_bad and trigger.to_state.state in ['unavailable','unknown'])
-                 ) }}
+              {% set st = states(ent) %}
+              {% if trigger.platform == 'homeassistant' and not notify_on_start %}
+                false
+              {% else %}
+                (st == desired) or (also_bad and st in ['unavailable','unknown'])
+              {% endif %}
         sequence:
-          - service: !input notify_device
-            data:
-              title: "{{ title }}"
-              message: "{{ msg }}"
-              data:
-                tag: "{{ tag }}"
-                persistent: "{{ sticky }}"
-                # Only include channel if provided (empty channel can behave oddly on some phones)
-                channel: >-
-                  {{ channel if (channel | trim) else omit }}
-                importance: "{{ importance }}"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ (channel | trim) != '' }}"
+                sequence:
+                  - service: !input notify_service
+                    data:
+                      title: "{{ notif_title }}"
+                      message: "{{ msg }}"
+                      data:
+                        tag: "{{ tag }}"
+                        persistent: "{{ sticky | bool }}"
+                        channel: "{{ channel }}"
+                        importance: "{{ importance }}"
+            default:
+              - service: !input notify_service
+                data:
+                  title: "{{ notif_title }}"
+                  message: "{{ msg }}"
+                  data:
+                    tag: "{{ tag }}"
+                    persistent: "{{ sticky | bool }}"
+                    importance: "{{ importance }}"
+
     default:
-      # CLEAR when entity leaves desired state (and not unavailable/unknown unless you want that)
-      - service: !input notify_device
+      # CLEAR when not in desired state
+      - service: !input notify_service
         data:
           message: clear_notification
           data:
