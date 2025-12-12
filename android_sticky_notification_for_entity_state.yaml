@@ -115,7 +115,7 @@ action:
                   - condition: template
                     value_template: "{{ (channel | trim) != '' }}"
                 sequence:
-                  - service: "{{ notify_service }}"
+                  - service: !input notify_service
                     data:
                       title: "{{ notif_title }}"
                       message: "{{ msg }}"
@@ -125,7 +125,7 @@ action:
                         channel: "{{ channel }}"
                         importance: "{{ importance }}"
             default:
-              - service: "{{ notify_service }}"
+              - service: !input notify_service
                 data:
                   title: "{{ notif_title }}"
                   message: "{{ msg }}"
@@ -135,7 +135,7 @@ action:
                     importance: "{{ importance }}"
     default:
       # CLEAR when entity leaves desired state
-      - service: "{{ notify_service }}"
+      - service: !input notify_service
         data:
           message: clear_notification
           data:
