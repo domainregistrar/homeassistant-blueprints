@@ -1,0 +1,153 @@
+blueprint:
+  name: Remote light control via MQTT device trigger
+  description: Control a light from an 4 button IKEA remote using MQTT device triggers.
+  domain: automation
+  input:
+    remote_device:
+      name: Remote device
+      description: The remote/button device to listen to
+      selector:
+        device: {}
+
+    target_light:
+      name: Light
+      description: Light to control
+      selector:
+        entity:
+          domain: light
+
+    dim_down_step:
+      name: Dim down step %
+      description: Percentage to reduce brightness when pressing the off button
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    dim_up_step:
+      name: Dim up step %
+      description: Percentage to increase brightness when pressing the on button
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    right_button_brightness:
+      name: Right button brightness %
+      description: Brightness level to set when pressing the right button
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    off_button_action:
+      name: Off button action
+      description: What the left button should do
+      default: turn_off
+      selector:
+        select:
+          options:
+            - turn_off
+            - turn_on
+
+input:
+  remote_device: !input remote_device
+  target_light: !input target_light
+  dim_down_step: !input dim_down_step
+  dim_up_step: !input dim_up_step
+  right_button_brightness: !input right_button_brightness
+  off_button_action: !input off_button_action
+
+triggers:
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: "off"
+    id: dim_down
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: "on"
+    id: dim_up
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: arrow_left_click
+    id: left
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: arrow_right_click
+    id: right
+
+conditions: []
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: dim_down
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step_pct: "{{ 0 - (dim_down_step | int) }}"
+
+      - conditions:
+          - condition: trigger
+            id: dim_up
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_step_pct: "{{ dim_up_step | int }}"
+
+      - conditions:
+          - condition: trigger
+            id: left
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_action == 'turn_off' }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input target_light
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_action == 'turn_on' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+      - conditions:
+          - condition: trigger
+            id: right
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_pct: "{{ right_button_brightness | int }}"
+
+mode: single
