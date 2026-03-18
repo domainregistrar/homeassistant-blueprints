@@ -6,7 +6,8 @@ blueprint:
     set brightness step, set brightness percent, activate a scene, or run a script.
     For light-on actions, you can optionally apply brightness, colour mode, and transition.
   domain: automation
-  min_version: 2024.6.0
+  homeassistant:
+    min_version: "2024.6.0"
 
   input:
     general_settings:
