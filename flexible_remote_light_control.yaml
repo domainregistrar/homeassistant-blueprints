@@ -109,6 +109,7 @@ blueprint:
     off_button_scene:
       name: Off button scene
       description: Used only if Off button mode = scene
+      default: []
       selector:
         entity:
           domain: scene
@@ -116,6 +117,7 @@ blueprint:
     off_button_script:
       name: Off button script
       description: Used only if Off button mode = script
+      default: []
       selector:
         entity:
           domain: script
@@ -207,6 +209,7 @@ blueprint:
     on_button_scene:
       name: On button scene
       description: Used only if On button mode = scene
+      default: []
       selector:
         entity:
           domain: scene
@@ -214,6 +217,7 @@ blueprint:
     on_button_script:
       name: On button script
       description: Used only if On button mode = script
+      default: []
       selector:
         entity:
           domain: script
@@ -305,6 +309,7 @@ blueprint:
     left_button_scene:
       name: Left button scene
       description: Used only if Left button mode = scene
+      default: []
       selector:
         entity:
           domain: scene
@@ -312,6 +317,7 @@ blueprint:
     left_button_script:
       name: Left button script
       description: Used only if Left button mode = script
+      default: []
       selector:
         entity:
           domain: script
@@ -403,6 +409,7 @@ blueprint:
     right_button_scene:
       name: Right button scene
       description: Used only if Right button mode = scene
+      default: []
       selector:
         entity:
           domain: scene
@@ -410,6 +417,7 @@ blueprint:
     right_button_script:
       name: Right button script
       description: Used only if Right button mode = script
+      default: []
       selector:
         entity:
           domain: script
@@ -427,6 +435,8 @@ variables:
   off_button_color_temp_kelvin: !input off_button_color_temp_kelvin
   off_button_rgb_color: !input off_button_rgb_color
   off_button_transition: !input off_button_transition
+  off_button_scene: !input off_button_scene
+  off_button_script: !input off_button_script
 
   on_button_mode: !input on_button_mode
   on_button_step: !input on_button_step
@@ -436,6 +446,8 @@ variables:
   on_button_color_temp_kelvin: !input on_button_color_temp_kelvin
   on_button_rgb_color: !input on_button_rgb_color
   on_button_transition: !input on_button_transition
+  on_button_scene: !input on_button_scene
+  on_button_script: !input on_button_script
 
   left_button_mode: !input left_button_mode
   left_button_step: !input left_button_step
@@ -445,6 +457,8 @@ variables:
   left_button_color_temp_kelvin: !input left_button_color_temp_kelvin
   left_button_rgb_color: !input left_button_rgb_color
   left_button_transition: !input left_button_transition
+  left_button_scene: !input left_button_scene
+  left_button_script: !input left_button_script
 
   right_button_mode: !input right_button_mode
   right_button_step: !input right_button_step
@@ -454,6 +468,8 @@ variables:
   right_button_color_temp_kelvin: !input right_button_color_temp_kelvin
   right_button_rgb_color: !input right_button_rgb_color
   right_button_transition: !input right_button_transition
+  right_button_scene: !input right_button_scene
+  right_button_script: !input right_button_script
 
 triggers:
   - trigger: device
@@ -578,7 +594,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ off_button_mode == 'scene' }}"
+                    value_template: "{{ off_button_mode == 'scene' and off_button_scene not in [none, '', []] }}"
                 sequence:
                   - action: scene.turn_on
                     target:
@@ -588,7 +604,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ off_button_mode == 'script' }}"
+                    value_template: "{{ off_button_mode == 'script' and off_button_script not in [none, '', []] }}"
                 sequence:
                   - action: script.turn_on
                     target:
@@ -684,7 +700,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ on_button_mode == 'scene' }}"
+                    value_template: "{{ on_button_mode == 'scene' and on_button_scene not in [none, '', []] }}"
                 sequence:
                   - action: scene.turn_on
                     target:
@@ -694,7 +710,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ on_button_mode == 'script' }}"
+                    value_template: "{{ on_button_mode == 'script' and on_button_script not in [none, '', []] }}"
                 sequence:
                   - action: script.turn_on
                     target:
@@ -790,7 +806,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ left_button_mode == 'scene' }}"
+                    value_template: "{{ left_button_mode == 'scene' and left_button_scene not in [none, '', []] }}"
                 sequence:
                   - action: scene.turn_on
                     target:
@@ -800,7 +816,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ left_button_mode == 'script' }}"
+                    value_template: "{{ left_button_mode == 'script' and left_button_script not in [none, '', []] }}"
                 sequence:
                   - action: script.turn_on
                     target:
@@ -896,7 +912,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ right_button_mode == 'scene' }}"
+                    value_template: "{{ right_button_mode == 'scene' and right_button_scene not in [none, '', []] }}"
                 sequence:
                   - action: scene.turn_on
                     target:
@@ -906,7 +922,7 @@ actions:
 
               - conditions:
                   - condition: template
-                    value_template: "{{ right_button_mode == 'script' }}"
+                    value_template: "{{ right_button_mode == 'script' and right_button_script not in [none, '', []] }}"
                 sequence:
                   - action: script.turn_on
                     target:
