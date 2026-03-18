@@ -1,8 +1,10 @@
 blueprint:
-  name: Flexible remote light control
+  name: Flexible remote light control with scenes, scripts, and colour mode selector
   description: >
-    Control a light from a remote using MQTT device triggers.
-    Each button can be configured independently.
+    Control a light from an MQTT device-trigger remote.
+    Each button can independently do nothing, turn on, turn off, toggle,
+    set brightness step, set brightness percent, activate a scene, or run a script.
+    For light-on actions, you can optionally apply brightness, colour mode, and transition.
 
   domain: automation
 
@@ -15,7 +17,7 @@ blueprint:
 
     target_light:
       name: Target light
-      description: The light entity to control
+      description: The light entity to control for light-based actions
       selector:
         entity:
           domain: light
@@ -33,6 +35,8 @@ blueprint:
             - toggle
             - brightness_step
             - brightness_pct
+            - scene
+            - script
 
     off_button_step:
       name: Off button brightness step %
@@ -47,7 +51,7 @@ blueprint:
 
     off_button_brightness:
       name: Off button brightness %
-      description: Used only if Off button mode = brightness_pct
+      description: Used for brightness_pct mode, or optionally with turn_on
       default: 20
       selector:
         number:
@@ -55,6 +59,66 @@ blueprint:
           max: 100
           step: 1
           unit_of_measurement: "%"
+
+    off_button_apply_brightness_on_turn_on:
+      name: Off button apply brightness on turn_on
+      description: If enabled, turn_on will also apply the brightness % value below
+      default: false
+      selector:
+        boolean: {}
+
+    off_button_colour_mode:
+      name: Off button colour mode
+      description: Optional colour mode for light turn_on / brightness actions
+      default: none
+      selector:
+        select:
+          options:
+            - none
+            - color_temp_kelvin
+            - rgb_color
+
+    off_button_color_temp_kelvin:
+      name: Off button colour temperature (K)
+      description: Used only if Off button colour mode = color_temp_kelvin
+      default: 2700
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 1500
+          max: 9000
+
+    off_button_rgb_color:
+      name: Off button RGB colour
+      description: Used only if Off button colour mode = rgb_color
+      default: [255, 255, 255]
+      selector:
+        color_rgb: {}
+
+    off_button_transition:
+      name: Off button transition (seconds)
+      description: Used for light actions and scene
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          step: 0.5
+          unit_of_measurement: s
+
+    off_button_scene:
+      name: Off button scene
+      description: Used only if Off button mode = scene
+      selector:
+        entity:
+          domain: scene
+
+    off_button_script:
+      name: Off button script
+      description: Used only if Off button mode = script
+      selector:
+        entity:
+          domain: script
 
     on_button_mode:
       name: On button mode
@@ -69,6 +133,8 @@ blueprint:
             - toggle
             - brightness_step
             - brightness_pct
+            - scene
+            - script
 
     on_button_step:
       name: On button brightness step %
@@ -83,7 +149,7 @@ blueprint:
 
     on_button_brightness:
       name: On button brightness %
-      description: Used only if On button mode = brightness_pct
+      description: Used for brightness_pct mode, or optionally with turn_on
       default: 100
       selector:
         number:
@@ -91,6 +157,66 @@ blueprint:
           max: 100
           step: 1
           unit_of_measurement: "%"
+
+    on_button_apply_brightness_on_turn_on:
+      name: On button apply brightness on turn_on
+      description: If enabled, turn_on will also apply the brightness % value below
+      default: false
+      selector:
+        boolean: {}
+
+    on_button_colour_mode:
+      name: On button colour mode
+      description: Optional colour mode for light turn_on / brightness actions
+      default: none
+      selector:
+        select:
+          options:
+            - none
+            - color_temp_kelvin
+            - rgb_color
+
+    on_button_color_temp_kelvin:
+      name: On button colour temperature (K)
+      description: Used only if On button colour mode = color_temp_kelvin
+      default: 4000
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 1500
+          max: 9000
+
+    on_button_rgb_color:
+      name: On button RGB colour
+      description: Used only if On button colour mode = rgb_color
+      default: [255, 255, 255]
+      selector:
+        color_rgb: {}
+
+    on_button_transition:
+      name: On button transition (seconds)
+      description: Used for light actions and scene
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          step: 0.5
+          unit_of_measurement: s
+
+    on_button_scene:
+      name: On button scene
+      description: Used only if On button mode = scene
+      selector:
+        entity:
+          domain: scene
+
+    on_button_script:
+      name: On button script
+      description: Used only if On button mode = script
+      selector:
+        entity:
+          domain: script
 
     left_button_mode:
       name: Left button mode
@@ -105,6 +231,8 @@ blueprint:
             - toggle
             - brightness_step
             - brightness_pct
+            - scene
+            - script
 
     left_button_step:
       name: Left button brightness step %
@@ -119,7 +247,7 @@ blueprint:
 
     left_button_brightness:
       name: Left button brightness %
-      description: Used only if Left button mode = brightness_pct
+      description: Used for brightness_pct mode, or optionally with turn_on
       default: 25
       selector:
         number:
@@ -127,6 +255,66 @@ blueprint:
           max: 100
           step: 1
           unit_of_measurement: "%"
+
+    left_button_apply_brightness_on_turn_on:
+      name: Left button apply brightness on turn_on
+      description: If enabled, turn_on will also apply the brightness % value below
+      default: false
+      selector:
+        boolean: {}
+
+    left_button_colour_mode:
+      name: Left button colour mode
+      description: Optional colour mode for light turn_on / brightness actions
+      default: none
+      selector:
+        select:
+          options:
+            - none
+            - color_temp_kelvin
+            - rgb_color
+
+    left_button_color_temp_kelvin:
+      name: Left button colour temperature (K)
+      description: Used only if Left button colour mode = color_temp_kelvin
+      default: 3000
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 1500
+          max: 9000
+
+    left_button_rgb_color:
+      name: Left button RGB colour
+      description: Used only if Left button colour mode = rgb_color
+      default: [255, 255, 255]
+      selector:
+        color_rgb: {}
+
+    left_button_transition:
+      name: Left button transition (seconds)
+      description: Used for light actions and scene
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          step: 0.5
+          unit_of_measurement: s
+
+    left_button_scene:
+      name: Left button scene
+      description: Used only if Left button mode = scene
+      selector:
+        entity:
+          domain: scene
+
+    left_button_script:
+      name: Left button script
+      description: Used only if Left button mode = script
+      selector:
+        entity:
+          domain: script
 
     right_button_mode:
       name: Right button mode
@@ -141,6 +329,8 @@ blueprint:
             - toggle
             - brightness_step
             - brightness_pct
+            - scene
+            - script
 
     right_button_step:
       name: Right button brightness step %
@@ -155,7 +345,7 @@ blueprint:
 
     right_button_brightness:
       name: Right button brightness %
-      description: Used only if Right button mode = brightness_pct
+      description: Used for brightness_pct mode, or optionally with turn_on
       default: 20
       selector:
         number:
@@ -164,26 +354,106 @@ blueprint:
           step: 1
           unit_of_measurement: "%"
 
+    right_button_apply_brightness_on_turn_on:
+      name: Right button apply brightness on turn_on
+      description: If enabled, turn_on will also apply the brightness % value below
+      default: false
+      selector:
+        boolean: {}
+
+    right_button_colour_mode:
+      name: Right button colour mode
+      description: Optional colour mode for light turn_on / brightness actions
+      default: none
+      selector:
+        select:
+          options:
+            - none
+            - color_temp_kelvin
+            - rgb_color
+
+    right_button_color_temp_kelvin:
+      name: Right button colour temperature (K)
+      description: Used only if Right button colour mode = color_temp_kelvin
+      default: 2200
+      selector:
+        color_temp:
+          unit: kelvin
+          min: 1500
+          max: 9000
+
+    right_button_rgb_color:
+      name: Right button RGB colour
+      description: Used only if Right button colour mode = rgb_color
+      default: [255, 255, 255]
+      selector:
+        color_rgb: {}
+
+    right_button_transition:
+      name: Right button transition (seconds)
+      description: Used for light actions and scene
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 300
+          step: 0.5
+          unit_of_measurement: s
+
+    right_button_scene:
+      name: Right button scene
+      description: Used only if Right button mode = scene
+      selector:
+        entity:
+          domain: scene
+
+    right_button_script:
+      name: Right button script
+      description: Used only if Right button mode = script
+      selector:
+        entity:
+          domain: script
+
 mode: single
 
 variables:
-  light_entity: !input target_light
+  target_light: !input target_light
 
   off_button_mode: !input off_button_mode
   off_button_step: !input off_button_step
   off_button_brightness: !input off_button_brightness
+  off_button_apply_brightness_on_turn_on: !input off_button_apply_brightness_on_turn_on
+  off_button_colour_mode: !input off_button_colour_mode
+  off_button_color_temp_kelvin: !input off_button_color_temp_kelvin
+  off_button_rgb_color: !input off_button_rgb_color
+  off_button_transition: !input off_button_transition
 
   on_button_mode: !input on_button_mode
   on_button_step: !input on_button_step
   on_button_brightness: !input on_button_brightness
+  on_button_apply_brightness_on_turn_on: !input on_button_apply_brightness_on_turn_on
+  on_button_colour_mode: !input on_button_colour_mode
+  on_button_color_temp_kelvin: !input on_button_color_temp_kelvin
+  on_button_rgb_color: !input on_button_rgb_color
+  on_button_transition: !input on_button_transition
 
   left_button_mode: !input left_button_mode
   left_button_step: !input left_button_step
   left_button_brightness: !input left_button_brightness
+  left_button_apply_brightness_on_turn_on: !input left_button_apply_brightness_on_turn_on
+  left_button_colour_mode: !input left_button_colour_mode
+  left_button_color_temp_kelvin: !input left_button_color_temp_kelvin
+  left_button_rgb_color: !input left_button_rgb_color
+  left_button_transition: !input left_button_transition
 
   right_button_mode: !input right_button_mode
   right_button_step: !input right_button_step
   right_button_brightness: !input right_button_brightness
+  right_button_apply_brightness_on_turn_on: !input right_button_apply_brightness_on_turn_on
+  right_button_colour_mode: !input right_button_colour_mode
+  right_button_color_temp_kelvin: !input right_button_color_temp_kelvin
+  right_button_rgb_color: !input right_button_rgb_color
+  right_button_transition: !input right_button_transition
 
 triggers:
   - trigger: device
@@ -235,6 +505,20 @@ actions:
                   - action: light.turn_on
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ off_button_transition | float }}"
+                      brightness_pct: >
+                        {% if off_button_apply_brightness_on_turn_on %}
+                          {{ off_button_brightness | int }}
+                        {% endif %}
+                      color_temp_kelvin: >
+                        {% if off_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ off_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if off_button_colour_mode == 'rgb_color' %}
+                          {{ off_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -243,6 +527,8 @@ actions:
                   - action: light.turn_off
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ off_button_transition | float }}"
 
               - conditions:
                   - condition: template
@@ -261,6 +547,15 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_step_pct: "{{ off_button_step | int }}"
+                      transition: "{{ off_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if off_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ off_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if off_button_colour_mode == 'rgb_color' %}
+                          {{ off_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -271,6 +566,33 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_pct: "{{ off_button_brightness | int }}"
+                      transition: "{{ off_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if off_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ off_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if off_button_colour_mode == 'rgb_color' %}
+                          {{ off_button_rgb_color }}
+                        {% endif %}
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'scene' }}"
+                sequence:
+                  - action: scene.turn_on
+                    target:
+                      entity_id: !input off_button_scene
+                    data:
+                      transition: "{{ off_button_transition | float }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'script' }}"
+                sequence:
+                  - action: script.turn_on
+                    target:
+                      entity_id: !input off_button_script
 
       - conditions:
           - condition: trigger
@@ -289,6 +611,20 @@ actions:
                   - action: light.turn_on
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ on_button_transition | float }}"
+                      brightness_pct: >
+                        {% if on_button_apply_brightness_on_turn_on %}
+                          {{ on_button_brightness | int }}
+                        {% endif %}
+                      color_temp_kelvin: >
+                        {% if on_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ on_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if on_button_colour_mode == 'rgb_color' %}
+                          {{ on_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -297,6 +633,8 @@ actions:
                   - action: light.turn_off
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ on_button_transition | float }}"
 
               - conditions:
                   - condition: template
@@ -315,6 +653,15 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_step_pct: "{{ on_button_step | int }}"
+                      transition: "{{ on_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if on_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ on_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if on_button_colour_mode == 'rgb_color' %}
+                          {{ on_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -325,6 +672,33 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_pct: "{{ on_button_brightness | int }}"
+                      transition: "{{ on_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if on_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ on_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if on_button_colour_mode == 'rgb_color' %}
+                          {{ on_button_rgb_color }}
+                        {% endif %}
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'scene' }}"
+                sequence:
+                  - action: scene.turn_on
+                    target:
+                      entity_id: !input on_button_scene
+                    data:
+                      transition: "{{ on_button_transition | float }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'script' }}"
+                sequence:
+                  - action: script.turn_on
+                    target:
+                      entity_id: !input on_button_script
 
       - conditions:
           - condition: trigger
@@ -343,6 +717,20 @@ actions:
                   - action: light.turn_on
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ left_button_transition | float }}"
+                      brightness_pct: >
+                        {% if left_button_apply_brightness_on_turn_on %}
+                          {{ left_button_brightness | int }}
+                        {% endif %}
+                      color_temp_kelvin: >
+                        {% if left_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ left_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if left_button_colour_mode == 'rgb_color' %}
+                          {{ left_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -351,6 +739,8 @@ actions:
                   - action: light.turn_off
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ left_button_transition | float }}"
 
               - conditions:
                   - condition: template
@@ -369,6 +759,15 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_step_pct: "{{ left_button_step | int }}"
+                      transition: "{{ left_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if left_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ left_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if left_button_colour_mode == 'rgb_color' %}
+                          {{ left_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -379,6 +778,33 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_pct: "{{ left_button_brightness | int }}"
+                      transition: "{{ left_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if left_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ left_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if left_button_colour_mode == 'rgb_color' %}
+                          {{ left_button_rgb_color }}
+                        {% endif %}
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'scene' }}"
+                sequence:
+                  - action: scene.turn_on
+                    target:
+                      entity_id: !input left_button_scene
+                    data:
+                      transition: "{{ left_button_transition | float }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'script' }}"
+                sequence:
+                  - action: script.turn_on
+                    target:
+                      entity_id: !input left_button_script
 
       - conditions:
           - condition: trigger
@@ -397,6 +823,20 @@ actions:
                   - action: light.turn_on
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ right_button_transition | float }}"
+                      brightness_pct: >
+                        {% if right_button_apply_brightness_on_turn_on %}
+                          {{ right_button_brightness | int }}
+                        {% endif %}
+                      color_temp_kelvin: >
+                        {% if right_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ right_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if right_button_colour_mode == 'rgb_color' %}
+                          {{ right_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -405,6 +845,8 @@ actions:
                   - action: light.turn_off
                     target:
                       entity_id: !input target_light
+                    data:
+                      transition: "{{ right_button_transition | float }}"
 
               - conditions:
                   - condition: template
@@ -423,6 +865,15 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_step_pct: "{{ right_button_step | int }}"
+                      transition: "{{ right_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if right_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ right_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if right_button_colour_mode == 'rgb_color' %}
+                          {{ right_button_rgb_color }}
+                        {% endif %}
 
               - conditions:
                   - condition: template
@@ -433,3 +884,30 @@ actions:
                       entity_id: !input target_light
                     data:
                       brightness_pct: "{{ right_button_brightness | int }}"
+                      transition: "{{ right_button_transition | float }}"
+                      color_temp_kelvin: >
+                        {% if right_button_colour_mode == 'color_temp_kelvin' %}
+                          {{ right_button_color_temp_kelvin | int }}
+                        {% endif %}
+                      rgb_color: >
+                        {% if right_button_colour_mode == 'rgb_color' %}
+                          {{ right_button_rgb_color }}
+                        {% endif %}
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'scene' }}"
+                sequence:
+                  - action: scene.turn_on
+                    target:
+                      entity_id: !input right_button_scene
+                    data:
+                      transition: "{{ right_button_transition | float }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'script' }}"
+                sequence:
+                  - action: script.turn_on
+                    target:
+                      entity_id: !input right_button_script
