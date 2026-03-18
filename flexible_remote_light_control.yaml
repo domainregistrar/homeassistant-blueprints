@@ -5,6 +5,8 @@ blueprint:
     Each button can independently do nothing, turn on, turn off, toggle,
     set brightness step, set brightness percent, activate a scene, or run a script.
     For light-on actions, you can optionally apply brightness, colour mode, and transition.
+    Optional workaround: send a plain turn_on first, wait briefly, then send the
+    parameterised turn_on.
   domain: automation
   homeassistant:
     min_version: "2024.6.0"
@@ -28,6 +30,27 @@ blueprint:
           selector:
             entity:
               domain: light
+
+        pre_turn_on_workaround:
+          name: Pre-turn-on workaround
+          description: >
+            If enabled, any light turn_on action first sends a plain turn_on with no
+            parameters, waits briefly, then sends the full turn_on with brightness,
+            colour and/or transition.
+          default: false
+          selector:
+            boolean: {}
+
+        pre_turn_on_delay:
+          name: Pre-turn-on delay (seconds)
+          description: Delay between the plain turn_on and the parameterised turn_on
+          default: 0.2
+          selector:
+            number:
+              min: 0
+              max: 5
+              step: 0.1
+              unit_of_measurement: s
 
     off_button_section:
       name: ⏬ Off button
@@ -74,7 +97,7 @@ blueprint:
 
         off_button_apply_brightness_on_turn_on:
           name: Apply brightness on turn_on
-          description: If enabled, turn_on will also apply the brightness % value above
+          description: If enabled, turn_on also applies the brightness % above
           default: false
           selector:
             boolean: {}
@@ -179,7 +202,7 @@ blueprint:
 
         on_button_apply_brightness_on_turn_on:
           name: Apply brightness on turn_on
-          description: If enabled, turn_on will also apply the brightness % value above
+          description: If enabled, turn_on also applies the brightness % above
           default: false
           selector:
             boolean: {}
@@ -284,7 +307,7 @@ blueprint:
 
         left_button_apply_brightness_on_turn_on:
           name: Apply brightness on turn_on
-          description: If enabled, turn_on will also apply the brightness % value above
+          description: If enabled, turn_on also applies the brightness % above
           default: false
           selector:
             boolean: {}
@@ -389,7 +412,7 @@ blueprint:
 
         right_button_apply_brightness_on_turn_on:
           name: Apply brightness on turn_on
-          description: If enabled, turn_on will also apply the brightness % value above
+          description: If enabled, turn_on also applies the brightness % above
           default: false
           selector:
             boolean: {}
@@ -449,7 +472,8 @@ blueprint:
             entity:
               domain: script
 
-mode: single
+mode: queued
+max: 10
 
 trigger:
   - trigger: device
@@ -548,6 +572,10 @@ action:
               current_scene: !input right_button_scene
               current_script: !input right_button_script
 
+  - variables:
+      pre_turn_on_workaround: !input pre_turn_on_workaround
+      pre_turn_on_delay: !input pre_turn_on_delay
+
   - choose:
       - conditions:
           - condition: template
@@ -563,68 +591,171 @@ action:
                   - condition: template
                     value_template: "{{ not current_apply_brightness_on_turn_on and current_colour_mode == 'none' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ not current_apply_brightness_on_turn_on and current_colour_mode == 'color_temp_kelvin' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
-                      color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                              color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
+                          color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ not current_apply_brightness_on_turn_on and current_colour_mode == 'rgb_color' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
-                      rgb_color: "{{ current_rgb_color }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                              rgb_color: "{{ current_rgb_color }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
+                          rgb_color: "{{ current_rgb_color }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_apply_brightness_on_turn_on and current_colour_mode == 'none' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
-                      brightness_pct: "{{ current_brightness | int }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                              brightness_pct: "{{ current_brightness | int }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
+                          brightness_pct: "{{ current_brightness | int }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_apply_brightness_on_turn_on and current_colour_mode == 'color_temp_kelvin' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
-                      brightness_pct: "{{ current_brightness | int }}"
-                      color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                              brightness_pct: "{{ current_brightness | int }}"
+                              color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
+                          brightness_pct: "{{ current_brightness | int }}"
+                          color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_apply_brightness_on_turn_on and current_colour_mode == 'rgb_color' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      transition: "{{ current_transition | float }}"
-                      brightness_pct: "{{ current_brightness | int }}"
-                      rgb_color: "{{ current_rgb_color }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              transition: "{{ current_transition | float }}"
+                              brightness_pct: "{{ current_brightness | int }}"
+                              rgb_color: "{{ current_rgb_color }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          transition: "{{ current_transition | float }}"
+                          brightness_pct: "{{ current_brightness | int }}"
+                          rgb_color: "{{ current_rgb_color }}"
 
       - conditions:
           - condition: template
@@ -653,36 +784,89 @@ action:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'none' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_step_pct: "{{ current_step | int }}"
-                      transition: "{{ current_transition | float }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_step_pct: "{{ current_step | int }}"
+                              transition: "{{ current_transition | float }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_step_pct: "{{ current_step | int }}"
+                          transition: "{{ current_transition | float }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'color_temp_kelvin' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_step_pct: "{{ current_step | int }}"
-                      transition: "{{ current_transition | float }}"
-                      color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_step_pct: "{{ current_step | int }}"
+                              transition: "{{ current_transition | float }}"
+                              color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_step_pct: "{{ current_step | int }}"
+                          transition: "{{ current_transition | float }}"
+                          color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'rgb_color' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_step_pct: "{{ current_step | int }}"
-                      transition: "{{ current_transition | float }}"
-                      rgb_color: "{{ current_rgb_color }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_step_pct: "{{ current_step | int }}"
+                              transition: "{{ current_transition | float }}"
+                              rgb_color: "{{ current_rgb_color }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_step_pct: "{{ current_step | int }}"
+                          transition: "{{ current_transition | float }}"
+                          rgb_color: "{{ current_rgb_color }}"
 
       - conditions:
           - condition: template
@@ -693,36 +877,89 @@ action:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'none' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_pct: "{{ current_brightness | int }}"
-                      transition: "{{ current_transition | float }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_pct: "{{ current_brightness | int }}"
+                              transition: "{{ current_transition | float }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_pct: "{{ current_brightness | int }}"
+                          transition: "{{ current_transition | float }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'color_temp_kelvin' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_pct: "{{ current_brightness | int }}"
-                      transition: "{{ current_transition | float }}"
-                      color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_pct: "{{ current_brightness | int }}"
+                              transition: "{{ current_transition | float }}"
+                              color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_pct: "{{ current_brightness | int }}"
+                          transition: "{{ current_transition | float }}"
+                          color_temp_kelvin: "{{ current_color_temp_kelvin | int }}"
 
               - conditions:
                   - condition: template
                     value_template: "{{ current_colour_mode == 'rgb_color' }}"
                 sequence:
-                  - action: light.turn_on
-                    target:
-                      entity_id: !input target_light
-                    data:
-                      brightness_pct: "{{ current_brightness | int }}"
-                      transition: "{{ current_transition | float }}"
-                      rgb_color: "{{ current_rgb_color }}"
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ pre_turn_on_workaround }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                          - delay:
+                              milliseconds: "{{ (pre_turn_on_delay | float * 1000) | round(0) | int }}"
+                          - action: light.turn_on
+                            target:
+                              entity_id: !input target_light
+                            data:
+                              brightness_pct: "{{ current_brightness | int }}"
+                              transition: "{{ current_transition | float }}"
+                              rgb_color: "{{ current_rgb_color }}"
+                    default:
+                      - action: light.turn_on
+                        target:
+                          entity_id: !input target_light
+                        data:
+                          brightness_pct: "{{ current_brightness | int }}"
+                          transition: "{{ current_transition | float }}"
+                          rgb_color: "{{ current_rgb_color }}"
 
       - conditions:
           - condition: template
