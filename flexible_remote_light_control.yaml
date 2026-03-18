@@ -1,0 +1,435 @@
+blueprint:
+  name: Flexible remote light control
+  description: >
+    Control a light from a remote using MQTT device triggers.
+    Each button can be configured independently.
+
+  domain: automation
+
+  input:
+    remote_device:
+      name: Remote device
+      description: The remote/button device to listen to
+      selector:
+        device: {}
+
+    target_light:
+      name: Target light
+      description: The light entity to control
+      selector:
+        entity:
+          domain: light
+
+    off_button_mode:
+      name: Off button mode
+      description: Action for subtype "off"
+      default: brightness_step
+      selector:
+        select:
+          options:
+            - nothing
+            - turn_on
+            - turn_off
+            - toggle
+            - brightness_step
+            - brightness_pct
+
+    off_button_step:
+      name: Off button brightness step %
+      description: Used only if Off button mode = brightness_step
+      default: -5
+      selector:
+        number:
+          min: -100
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    off_button_brightness:
+      name: Off button brightness %
+      description: Used only if Off button mode = brightness_pct
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    on_button_mode:
+      name: On button mode
+      description: Action for subtype "on"
+      default: brightness_step
+      selector:
+        select:
+          options:
+            - nothing
+            - turn_on
+            - turn_off
+            - toggle
+            - brightness_step
+            - brightness_pct
+
+    on_button_step:
+      name: On button brightness step %
+      description: Used only if On button mode = brightness_step
+      default: 5
+      selector:
+        number:
+          min: -100
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    on_button_brightness:
+      name: On button brightness %
+      description: Used only if On button mode = brightness_pct
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    left_button_mode:
+      name: Left button mode
+      description: Action for subtype "arrow_left_click"
+      default: turn_off
+      selector:
+        select:
+          options:
+            - nothing
+            - turn_on
+            - turn_off
+            - toggle
+            - brightness_step
+            - brightness_pct
+
+    left_button_step:
+      name: Left button brightness step %
+      description: Used only if Left button mode = brightness_step
+      default: -10
+      selector:
+        number:
+          min: -100
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    left_button_brightness:
+      name: Left button brightness %
+      description: Used only if Left button mode = brightness_pct
+      default: 25
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    right_button_mode:
+      name: Right button mode
+      description: Action for subtype "arrow_right_click"
+      default: brightness_pct
+      selector:
+        select:
+          options:
+            - nothing
+            - turn_on
+            - turn_off
+            - toggle
+            - brightness_step
+            - brightness_pct
+
+    right_button_step:
+      name: Right button brightness step %
+      description: Used only if Right button mode = brightness_step
+      default: 10
+      selector:
+        number:
+          min: -100
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+    right_button_brightness:
+      name: Right button brightness %
+      description: Used only if Right button mode = brightness_pct
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+
+mode: single
+
+variables:
+  light_entity: !input target_light
+
+  off_button_mode: !input off_button_mode
+  off_button_step: !input off_button_step
+  off_button_brightness: !input off_button_brightness
+
+  on_button_mode: !input on_button_mode
+  on_button_step: !input on_button_step
+  on_button_brightness: !input on_button_brightness
+
+  left_button_mode: !input left_button_mode
+  left_button_step: !input left_button_step
+  left_button_brightness: !input left_button_brightness
+
+  right_button_mode: !input right_button_mode
+  right_button_step: !input right_button_step
+  right_button_brightness: !input right_button_brightness
+
+triggers:
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: "off"
+    id: off_button
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: "on"
+    id: on_button
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: arrow_left_click
+    id: left_button
+
+  - trigger: device
+    device_id: !input remote_device
+    domain: mqtt
+    type: action
+    subtype: arrow_right_click
+    id: right_button
+
+conditions: []
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: off_button
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'nothing' }}"
+                sequence: []
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'turn_on' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'turn_off' }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'toggle' }}"
+                sequence:
+                  - action: light.toggle
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'brightness_step' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ off_button_step | int }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ off_button_mode == 'brightness_pct' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ off_button_brightness | int }}"
+
+      - conditions:
+          - condition: trigger
+            id: on_button
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'nothing' }}"
+                sequence: []
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'turn_on' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'turn_off' }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'toggle' }}"
+                sequence:
+                  - action: light.toggle
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'brightness_step' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ on_button_step | int }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ on_button_mode == 'brightness_pct' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ on_button_brightness | int }}"
+
+      - conditions:
+          - condition: trigger
+            id: left_button
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'nothing' }}"
+                sequence: []
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'turn_on' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'turn_off' }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'toggle' }}"
+                sequence:
+                  - action: light.toggle
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'brightness_step' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ left_button_step | int }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ left_button_mode == 'brightness_pct' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ left_button_brightness | int }}"
+
+      - conditions:
+          - condition: trigger
+            id: right_button
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'nothing' }}"
+                sequence: []
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'turn_on' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'turn_off' }}"
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'toggle' }}"
+                sequence:
+                  - action: light.toggle
+                    target:
+                      entity_id: !input target_light
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'brightness_step' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_step_pct: "{{ right_button_step | int }}"
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ right_button_mode == 'brightness_pct' }}"
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: !input target_light
+                    data:
+                      brightness_pct: "{{ right_button_brightness | int }}"
